@@ -31,6 +31,7 @@ Leaflet.draw 0.2.0 changes a LOT of things from 0.1. Please see [BREAKING CHANGE
 ## Modifications by goflo
 - to add a point to a polyline or polygon user needs to press the SHIFT-key
 - to remove a point from a polyline or polygon user needs to press the ALT-key
+- own LayerGroup for the middle markers (LayerGroup with the real points is more important and on top of the middle markers layer)
 
 ## Customizing language and text in Leaflet.draw
 
