@@ -158,6 +158,7 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			if (!this._markerGroup) {
 				this._initMarkers();
 			}
+			this._poly._map.addLayer(this._middleMarkerGroup);
 			this._poly._map.addLayer(this._markerGroup);
 		}
 	},
@@ -185,7 +186,9 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 
 		if (poly._map) {
 			poly._map.removeLayer(this._markerGroup);
+			poly._map.removeLayer(this._middleMarkerGroup);
 			delete this._markerGroup;
+			delete this._middleMarkerGroup;
 			delete this._markers;
 		}
 	},
@@ -194,12 +197,14 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 	// Clear markers and update their location
 	updateMarkers: function () {
 		this._markerGroup.clearLayers();
+		this._middleMarkerGroup.clearLayers();
 		this._initMarkers();
 	},
 
 	_initMarkers: function () {
 		if (!this._markerGroup) {
 			this._markerGroup = new L.LayerGroup();
+			this._middleMarkerGroup = new L.LayerGroup();
 		}
 		this._markers = [];
 
@@ -223,16 +228,16 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 
 			markerLeft = this._markers[j];
 			markerRight = this._markers[i];
-
+			
 			this._createMiddleMarker(markerLeft, markerRight);
 			this._updatePrevNext(markerLeft, markerRight);
 		}
 	},
 
-	_createMarker: function (latlng, index) {
+	_createMarker: function (latlng, index, notDraggable) {
 		// Extending L.Marker in TouchEvents.js to include touch.
 		var marker = new L.Marker.Touch(latlng, {
-			draggable: true,
+			draggable: notDraggable ? false : true,
 			icon: this.options.icon,
 		});
 
@@ -248,19 +253,14 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			.on('MSPointerMove', this._onTouchMove, this)
 			.on('MSPointerUp', this._fireEdit, this);
 
-		this._markerGroup.addLayer(marker);
-
+		if (!notDraggable) {
+			this._markerGroup.addLayer(marker);
+		}
+		
 		return marker;
 	},
 
 	_onMarkerDragStart: function (e) {
-		// console.log('dragStart');
-		// console.log(e);
-		// if (e.originalEvent && !e.originalEvent.ctrlKey) {
-		//	  console.log('Leaflet.Draw: press [Ctrl] key to move point!');
-		//	  return;
-		// }
-		
 		this._poly.fire('editstart');
 	},
 
@@ -348,9 +348,8 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 	},
 
 	_onMarkerClick: function (e) {
-
-		var minPoints = L.Polygon && (this._poly instanceof L.Polygon) ? 4 : 3,
-			marker = e.target;
+		var minPoints = L.Polygon && (this._poly instanceof L.Polygon) ? 4 : 3;
+		var marker = e.target;
 
 		// If removing this point would create an invalid polyline/polygon don't remove
 		if (this._defaultShape().length < minPoints) {
@@ -370,19 +369,17 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 
 		// remove ghost markers near the removed marker
 		if (marker._middleLeft) {
-			this._markerGroup.removeLayer(marker._middleLeft);
+			this._middleMarkerGroup.removeLayer(marker._middleLeft);
 		}
 		if (marker._middleRight) {
-			this._markerGroup.removeLayer(marker._middleRight);
+			this._middleMarkerGroup.removeLayer(marker._middleRight);
 		}
 
 		// create a ghost marker in place of the removed one
 		if (marker._prev && marker._next) {
 			this._createMiddleMarker(marker._prev, marker._next);
-
 		} else if (!marker._prev) {
 			marker._next._middleLeft = null;
-
 		} else if (!marker._next) {
 			marker._prev._middleRight = null;
 		}
@@ -425,16 +422,13 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 	},
 
 	_createMiddleMarker: function (marker1, marker2) {
-		var latlng = this._getMiddleLatLng(marker1, marker2),
-			marker = this._createMarker(latlng),
-			onClick,
+		var latlng = this._getMiddleLatLng(marker1, marker2);
+		var marker = this._createMarker(latlng, null, true);
+		var onClick,
 			onDragStart,
 			onDragEnd;
-
+			
 		marker.setOpacity(0.6);
-		console.log('middle marker');
-		console.log(marker);
-		console.log(marker.options);
 		marker.options.draggable = false;
 		
 		marker1._middleRight = marker2._middleLeft = marker;
@@ -468,7 +462,7 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			marker.off('dragstart', onDragStart, this);
 			marker.off('dragend', onDragEnd, this);
 			marker.off('touchmove', onDragStart, this);
-
+			
 			this._createMiddleMarker(marker1, marker);
 			this._createMiddleMarker(marker, marker2);
 		};
@@ -478,6 +472,11 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 				console.log('Leaflet.Draw: press [Shift] key to add new point!');
 				return;
 			}
+			
+			// remove middle marker
+			this._middleMarkerGroup.removeLayer(marker);
+			// add middle marker to real point list
+			this._markerGroup.addLayer(marker);
 			
 			// marker was added now and can be dragged now
 			marker.options.draggable = true;
@@ -496,7 +495,8 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			// .on('dragend', onDragEnd, this)
 			// .on('touchmove', onDragStart, this);
 
-		this._markerGroup.addLayer(marker);
+		// this._markerGroup.addLayer(marker);
+		this._middleMarkerGroup.addLayer(marker);
 	},
 
 	_updatePrevNext: function (marker1, marker2) {
