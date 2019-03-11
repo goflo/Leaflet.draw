@@ -253,7 +253,14 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 		return marker;
 	},
 
-	_onMarkerDragStart: function () {
+	_onMarkerDragStart: function (e) {
+		// console.log('dragStart');
+		// console.log(e);
+		// if (e.originalEvent && !e.originalEvent.ctrlKey) {
+		//	  console.log('Leaflet.Draw: press [Ctrl] key to move point!');
+		//	  return;
+		// }
+		
 		this._poly.fire('editstart');
 	},
 
@@ -294,32 +301,17 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 		var marker = e.target;
 		var poly = this._poly;
 
+		var oldOrigLatLng = L.LatLngUtil.cloneLatLng(marker._origLatLng);
 		L.extend(marker._origLatLng, marker._latlng);
-
-		if (marker._middleLeft) {
-			marker._middleLeft.setLatLng(this._getMiddleLatLng(marker._prev, marker));
-		}
-		if (marker._middleRight) {
-			marker._middleRight.setLatLng(this._getMiddleLatLng(marker, marker._next));
-		}
-
 		if (poly.options.poly) {
 			var tooltip = poly._map._editTooltip; // Access the tooltip
 
 			// If we don't allow intersections and the polygon intersects
 			if (!poly.options.poly.allowIntersection && poly.intersects()) {
-
+				L.extend(marker._origLatLng, oldOrigLatLng);
+				marker.setLatLng(oldOrigLatLng);
 				var originalColor = poly.options.color;
 				poly.setStyle({color: this.options.drawError.color});
-
-				// Manually trigger 'dragend' behavior on marker we are about to remove
-				// WORKAROUND: introduced in 1.0.0-rc2, may be related to #4484
-				if (L.version.indexOf('0.7') !== 0) {
-					marker.dragging._draggable._onUp(e);
-				}
-				this._onMarkerClick(e); // Remove violating marker
-				// FIXME: Reset the marker to it's original position (instead of remove)
-
 				if (tooltip) {
 					tooltip.updateContent({
 						text: L.drawLocal.draw.handlers.polyline.error
@@ -338,6 +330,14 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 				}, 1000);
 			}
 		}
+
+		if (marker._middleLeft) {
+			marker._middleLeft.setLatLng(this._getMiddleLatLng(marker._prev, marker));
+		}
+		if (marker._middleRight) {
+			marker._middleRight.setLatLng(this._getMiddleLatLng(marker, marker._next));
+		}
+
 		//refresh the bounds when draging
 		this._poly._bounds._southWest = L.latLng(Infinity, Infinity);
 		this._poly._bounds._northEast = L.latLng(-Infinity, -Infinity);
@@ -356,7 +356,12 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 		if (this._defaultShape().length < minPoints) {
 			return;
 		}
-
+		
+		if (e.originalEvent && !e.originalEvent.altKey) {
+			console.log('Leaflet.Draw: press [Alt] key to delete point!');
+			return;
+		}
+		
 		// remove the marker
 		this._removeMarker(marker);
 
@@ -427,7 +432,11 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			onDragEnd;
 
 		marker.setOpacity(0.6);
-
+		console.log('middle marker');
+		console.log(marker);
+		console.log(marker.options);
+		marker.options.draggable = false;
+		
 		marker1._middleRight = marker2._middleLeft = marker;
 
 		onDragStart = function () {
@@ -464,17 +473,28 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			this._createMiddleMarker(marker, marker2);
 		};
 
-		onClick = function () {
+		onClick = function (e) {
+			if (e.originalEvent && !e.originalEvent.shiftKey) {
+				console.log('Leaflet.Draw: press [Shift] key to add new point!');
+				return;
+			}
+			
+			// marker was added now and can be dragged now
+			marker.options.draggable = true;
+			if (marker.dragging) {
+				marker.dragging.enable();
+			}
+			
 			onDragStart.call(this);
 			onDragEnd.call(this);
 			this._fireEdit();
 		};
 
 		marker
-			.on('click', onClick, this)
-			.on('dragstart', onDragStart, this)
-			.on('dragend', onDragEnd, this)
-			.on('touchmove', onDragStart, this);
+			.on('click', onClick, this);
+			// .on('dragstart', onDragStart, this)
+			// .on('dragend', onDragEnd, this)
+			// .on('touchmove', onDragStart, this);
 
 		this._markerGroup.addLayer(marker);
 	},
