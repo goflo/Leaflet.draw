@@ -22,10 +22,15 @@ Leaflet.draw 0.2.0 changes a LOT of things from 0.1. Please see [BREAKING CHANGE
 
 ## In this readme
 
+- [Modifications by goflo](#modifications-by-goflo)
 - [Customizing Language](#customizing-language-and-text-in-leafletdraw)
 - [Common tasks](#common-tasks)
 - [Contributing](#contributing)
 - [Thanks](#thanks)
+
+## Modifications by goflo
+- to add a point to a polyline or polygon user needs to press the SHIFT-key
+- to remove a point from a polyline or polygon user needs to press the ALT-key
 
 ## Customizing language and text in Leaflet.draw
 
