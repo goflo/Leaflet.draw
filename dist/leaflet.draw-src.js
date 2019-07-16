@@ -1,5 +1,5 @@
 /*
- Leaflet.draw 1.0.3+6f1346c, a plugin that adds drawing and editing tools to Leaflet powered maps.
+ Leaflet.draw 1.1.0+3cbfd27, a plugin that adds drawing and editing tools to Leaflet powered maps.
  (c) 2012-2017, Jacob Toye, Jon West, Smartrak, Leaflet
 
  https://github.com/Leaflet/Leaflet.draw
@@ -8,7 +8,7 @@
 (function (window, document, undefined) {/**
  * Leaflet.draw assumes that you have already included the Leaflet library.
  */
-L.drawVersion = "1.0.3+6f1346c";
+L.drawVersion = "1.1.0+3cbfd27";
 /**
  * @class L.Draw
  * @aka Draw
@@ -1876,8 +1876,6 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			color: '#b00b00',
 			timeout: 1000
 		}
-
-
 	},
 
 	// @method intialize(): void
@@ -1931,9 +1929,11 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 				});
 			}
 		}
-
-		poly.setStyle(poly.options.editing);
-
+		
+		if (poly.options.editing) {
+			poly.setStyle(poly.options.editing);
+		}
+		
 		if (this._poly._map) {
 
 			this._map = this._poly._map; // Set map
@@ -1965,8 +1965,10 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			}
 		}
 
-		poly.setStyle(poly.options.original);
-
+		if (poly.options.original) {
+			poly.setStyle(poly.options.original);
+		}
+		
 		if (poly._map) {
 			poly._map.removeLayer(this._markerGroup);
 			poly._map.removeLayer(this._middleMarkerGroup);
@@ -2094,6 +2096,7 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 				L.extend(marker._origLatLng, oldOrigLatLng);
 				marker.setLatLng(oldOrigLatLng);
 				var originalColor = poly.options.color;
+				
 				poly.setStyle({color: this.options.drawError.color});
 				if (tooltip) {
 					tooltip.updateContent({
@@ -2374,8 +2377,11 @@ L.Edit.SimpleShape = L.Handler.extend({
 		var shape = this._shape;
 		if (this._shape._map) {
 			this._map = this._shape._map;
-			shape.setStyle(shape.options.editing);
-
+			
+			if (shape.options.editing) {
+				shape.setStyle(shape.options.editing);
+			}
+			
 			if (shape._map) {
 				this._map = shape._map;
 				if (!this._markerGroup) {
@@ -2391,8 +2397,10 @@ L.Edit.SimpleShape = L.Handler.extend({
 	removeHooks: function () {
 		var shape = this._shape;
 
-		shape.setStyle(shape.options.original);
-
+		if (shape.options.original) {
+			shape.setStyle(shape.options.original);
+		}
+		
 		if (shape._map) {
 			this._unbindMarker(this._moveMarker);
 
@@ -4588,7 +4596,7 @@ L.EditToolbar.Edit = L.Handler.extend({
 		if (this._selectedPathOptions) {
 			if (layer instanceof L.Marker) {
 				this._toggleMarkerHighlight(layer);
-			} else {
+			} else if (layer.options.previousOptions) {
 				// reset the layer style to what is was before being selected
 				layer.setStyle(layer.options.previousOptions);
 				// remove the cached options for the layer object

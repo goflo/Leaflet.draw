@@ -93,8 +93,6 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			color: '#b00b00',
 			timeout: 1000
 		}
-
-
 	},
 
 	// @method intialize(): void
@@ -148,9 +146,11 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 				});
 			}
 		}
-
-		poly.setStyle(poly.options.editing);
-
+		
+		if (poly.options.editing) {
+			poly.setStyle(poly.options.editing);
+		}
+		
 		if (this._poly._map) {
 
 			this._map = this._poly._map; // Set map
@@ -182,8 +182,10 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			}
 		}
 
-		poly.setStyle(poly.options.original);
-
+		if (poly.options.original) {
+			poly.setStyle(poly.options.original);
+		}
+		
 		if (poly._map) {
 			poly._map.removeLayer(this._markerGroup);
 			poly._map.removeLayer(this._middleMarkerGroup);
@@ -311,6 +313,7 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 				L.extend(marker._origLatLng, oldOrigLatLng);
 				marker.setLatLng(oldOrigLatLng);
 				var originalColor = poly.options.color;
+				
 				poly.setStyle({color: this.options.drawError.color});
 				if (tooltip) {
 					tooltip.updateContent({
